@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHIP CHAIN COLD BLOCK // Quantum Cryo-Ledger</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;600;700&family=Orbitron:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        orbitron: ['Orbitron', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace']
+                    },
+                    colors: {
+                        ice: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                            glow: '#00f0ff',
+                            dark: '#030a16',
+                            card: '#081426'
+                        }
+                    },
+                    boxShadow: {
+                        'ice-glow': '0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 15px rgba(0, 240, 255, 0.2)',
+                        'ice-button': '0 0 35px rgba(0, 240, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.8)',
+                        'glacier-danger': '0 0 30px rgba(239, 68, 68, 0.5)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Styling & Frost FX */
+        body {
+            background-color: #020610;
+            color: #e0f2fe;
+            overflow-x: hidden;
+            user-select: none;
+        }
+
+        /* Scanline Overlay */
+        .scanline {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 240, 255, 0.03) 50%,
+                rgba(0, 240, 255, 0.03)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+        }
+
+        /* Glassmorphism Panels */
+        .ice-panel {
+            background: rgba(8, 20, 38, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            position: relative;
+        }
+
+        .ice-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.8), transparent);
+        }
+
+        /* Cybernetic Corner Decorator */
+        .cyber-corner {
+            clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        }
+
+        /* Cold Shocker Pulse Animation */
+        @keyframes coldPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.03); }
+        }
+
+        .animate-cold-pulse {
+            animation: coldPulse 3s infinite ease-in-out;
+        }
+
+        /* Frost Overlays for Ice Age Event */
+        #frostOverlay {
+            pointer-events: none;
+            transition: opacity 2s ease-in-out;
+            background: radial-gradient(circle at center, transparent 30%, rgba(186, 230, 253, 0.4) 80%, rgba(125, 211, 252, 0.8) 100%);
+            mix-blend-mode: overlay;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030a16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #0284c7;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+
+        /* Floating Click Floating Text */
+        .float-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 1.2s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 800;
+            color: #00f0ff;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.8);
+            z-index: 50;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1.3); }
+        }
+    </style>
+</head>
+<body class="font-mono min-h-screen flex flex-col justify-between relative bg-[#020610] text-ice-100">
+
+    <!-- Interactive Background Canvas for Glacial Snow Particles -->
+    <canvas id="iceCanvas" class="fixed inset-0 z-0 pointer-events-none"></canvas>
+
+    <!-- Scanline CRT Effect Filter -->
+    <div class="scanline fixed inset-0 z-10 pointer-events-none"></div>
+
+    <!-- Ice Age Frost Freeze Over Screen Overlay (Triggers on 100 Trillion / Final Epoch) -->
+    <div id="frostOverlay" class="fixed inset-0 z-40 opacity-0 transition-opacity duration-1000 border-[20px] border-ice-300/40"></div>
+
+    <!-- TOP HEADER / NAV BAR -->
+    <header class="relative z-20 border-b border-ice-500/30 bg-ice-dark/90 backdrop-blur-md px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-ice-500/10 border border-ice-glow/50 rounded-lg shadow-ice-glow">
+                    <i data-lucide="snowflake" class="w-7 h-7 text-ice-glow animate-spin" style="animation-duration: 12s;"></i>
+                </div>
+                <div>
+                    <h1 class="font-orbitron font-black text-xl md:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-ice-glow via-ice-300 to-white">
+                        CHIP CHAIN <span class="text-xs bg-ice-500/20 text-ice-glow px-2 py-0.5 rounded border border-ice-glow/40 uppercase">COLD BLOCK</span>
+                    </h1>
+                    <p class="text-[10px] text-ice-300/70 tracking-widest uppercase">HISTORICAL ADVANCED HARDWARE CRYO-LEDGER</p>
+                </div>
+            </div>
+
+            <!-- Global Status Indicators -->
+            <div class="flex items-center gap-4 text-xs">
+                <!-- Temperature Meter -->
+                <div class="ice-panel px-3 py-1.5 rounded-lg flex items-center space-x-2 border-ice-500/40">
+                    <i data-lucide="thermometer-snowflake" class="w-4 h-4 text-ice-glow"></i>
+                    <div>
+                        <span class="text-ice-300/60 block text-[9px] uppercase">Global Temp</span>
+                        <span id="tempDisplay" class="font-bold text-ice-glow font-orbitron">-18.40 °C</span>
+                    </div>
+                </div>
+
+                <!-- Ice Age Countdown Metric -->
+                <div class="ice-panel px-3 py-1.5 rounded-lg flex items-center space-x-2 border-purple-500/40">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-purple-400"></i>
+                    <div>
+                        <span class="text-purple-300/60 block text-[9px] uppercase">Target Limit</span>
+                        <span class="font-bold text-purple-300 font-orbitron">100 TRILLION</span>
+                    </div>
+                </div>
+
+                <!-- Sound FX Toggle -->
+                <button id="soundBtn" onclick="toggleAudio()" class="ice-panel p-2 rounded-lg hover:border-ice-glow transition-all text-ice-300">
+                    <i data-lucide="volume-2" id="soundIcon" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN APP CORE LAYOUT -->
+    <main class="relative z-20 max-w-7xl mx-auto w-full px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 my-auto">
+        
+        <!-- LEFT SIDEBAR: HARDWARE & MINING NODES -->
+        <section class="lg:col-span-3 space-y-4 flex flex-col">
+            <div class="ice-panel p-4 rounded-xl cyber-corner flex-1 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-4 border-b border-ice-500/20 pb-2">
+                        <h2 class="font-orbitron font-bold text-sm text-ice-glow flex items-center gap-2">
+                            <i data-lucide="cpu" class="w-4 h-4"></i> CRYO HARDWARE
+                        </h2>
+                        <span class="text-[10px] bg-ice-500/20 text-ice-300 px-1.5 py-0.5 rounded">SHOP</span>
+                    </div>
+
+                    <!-- Upgrade Hardware Store List -->
+                    <div class="space-y-3" id="hardwareList">
+                        <!-- Upgrades rendered via JS -->
+                    </div>
+                </div>
+
+                <!-- Hardware Stats Summary -->
+                <div class="mt-6 pt-4 border-t border-ice-500/20 text-xs space-y-2">
+                    <div class="flex justify-between text-ice-300/80">
+                        <span>Total Hash Rate:</span>
+                        <span id="hashRateDisplay" class="font-orbitron text-ice-glow font-bold">0 H/s</span>
+                    </div>
+                    <div class="flex justify-between text-ice-300/80">
+                        <span>Passive Yield:</span>
+                        <span id="yieldDisplay" class="font-orbitron text-emerald-400 font-bold">0 ICE/s</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CENTER CORE: MINTING ENGINE & MAIN BLOCK COUNTER -->
+        <section class="lg:col-span-6 space-y-6 flex flex-col items-center justify-center">
+            
+            <!-- Global Block Counter Display -->
+            <div class="w-full ice-panel p-6 rounded-2xl text-center cyber-corner relative overflow-hidden group">
+                <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-ice-glow/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="text-xs uppercase tracking-widest text-ice-300/70 mb-1 flex items-center justify-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    BLOCK HEIGHT LEDGER
+                </div>
+                
+                <!-- MASSIVE BLOCK COUNTER -->
+                <div id="blockCounter" class="font-orbitron font-black text-3xl sm:text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-b from-white via-ice-100 to-ice-glow tracking-tight my-2 drop-shadow-[0_0_20px_rgba(0,240,255,0.5)]">
+                    0
+                </div>
+
+                <!-- Target Progress Bar -->
+                <div class="w-full bg-ice-dark/80 h-3 rounded-full overflow-hidden border border-ice-500/30 mt-4 relative">
+                    <div id="progressBar" class="bg-gradient-to-r from-ice-600 via-ice-glow to-purple-500 h-full w-0 transition-all duration-300 relative">
+                        <div class="absolute inset-0 bg-white/30 animate-pulse"></div>
+                    </div>
+                </div>
+                <div class="flex justify-between text-[10px] text-ice-300/60 mt-1">
+                    <span>GENESIS BLOCK (0)</span>
+                    <span id="progressPercent">0.0000%</span>
+                    <span>ICE AGE (100 TRILLION)</span>
+                </div>
+            </div>
+
+            <!-- INTERACTIVE CLICK & MINT COLD CORE BUTTON -->
+            <div class="relative group my-4 flex justify-center items-center">
+                <!-- Outer Pulsing Halo -->
+                <div class="absolute inset-0 rounded-full bg-gradient-to-r from-ice-glow via-cyan-400 to-blue-600 blur-xl opacity-50 group-hover:opacity-80 transition-opacity duration-500 animate-cold-pulse"></div>
+
+                <button id="mintBtn" onclick="mintBlock(event)" class="relative w-48 h-48 sm:w-56 sm:h-56 rounded-full bg-gradient-to-br from-ice-card via-[#0c223c] to-ice-dark border-4 border-ice-glow/60 shadow-ice-button active:scale-95 transition-all duration-150 flex flex-col items-center justify-center p-4 cursor-pointer overflow-hidden">
+                    <i data-lucide="box" class="w-12 h-12 text-ice-glow mb-2 group-hover:rotate-12 transition-transform duration-300"></i>
+                    <span class="font-orbitron font-black text-lg sm:text-xl text-white tracking-widest text-center">MINT COLD BLOCK</span>
+                    <span class="text-[10px] text-ice-300/80 mt-1 tracking-widest font-mono">CLICK TO CRYPTO-FREEZE</span>
+                    
+                    <!-- Inner Circular Border Ring -->
+                    <div class="absolute inset-2 rounded-full border border-ice-glow/20 pointer-events-none"></div>
+                </button>
+            </div>
+
+            <!-- TURBO SIMULATION JUMP CONTROL (To Reach Trillions) -->
+            <div class="w-full ice-panel p-4 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="text-left">
+                    <div class="font-orbitron font-bold text-xs text-ice-glow flex items-center gap-1.5">
+                        <i data-lucide="zap" class="w-4 h-4 text-yellow-400"></i> QUANTUM HYPER-DRIVE
+                    </div>
+                    <div class="text-[11px] text-ice-300/70">Accelerate block epoch calculations exponentially</div>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="triggerTurbo(1000000)" class="flex-1 sm:flex-none px-3 py-1.5 bg-ice-500/10 hover:bg-ice-500/20 border border-ice-500/40 rounded-lg text-xs font-orbitron text-ice-glow transition-all">
+                        +1M
+                    </button>
+                    <button onclick="triggerTurbo(1000000000)" class="flex-1 sm:flex-none px-3 py-1.5 bg-ice-500/10 hover:bg-ice-500/20 border border-ice-glow/60 rounded-lg text-xs font-orbitron text-ice-glow transition-all shadow-ice-glow">
+                        +1B
+                    </button>
+                    <button onclick="triggerTurbo(1000000000000)" class="flex-1 sm:flex-none px-3 py-1.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/60 rounded-lg text-xs font-orbitron text-purple-300 transition-all">
+                        +1 TRILLION
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT SIDEBAR: LEDGER TERMINAL & REWARDS -->
+        <section class="lg:col-span-3 space-y-4 flex flex-col">
+            <!-- Balance & Cold Yield Panel -->
+            <div class="ice-panel p-4 rounded-xl cyber-corner">
+                <div class="text-xs text-ice-300/60 mb-1">UNCLAIMED REWARDS</div>
+                <div id="rewardBalance" class="font-orbitron font-bold text-2xl text-emerald-400 mb-2">0.00 $ICE</div>
+                <button onclick="claimRewards()" class="w-full py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 rounded-lg text-xs font-orbitron text-emerald-300 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="snowflake" class="w-4 h-4"></i> CLAIM TO COLD STORAGE
+                </button>
+            </div>
+
+            <!-- Terminal Blockchain Ledger Log -->
+            <div class="ice-panel p-4 rounded-xl flex-1 flex flex-col justify-between min-h-[300px]">
+                <div class="flex items-center justify-between border-b border-ice-500/20 pb-2 mb-2">
+                    <h3 class="font-orbitron font-bold text-xs text-ice-glow flex items-center gap-1.5">
+                        <i data-lucide="terminal" class="w-4 h-4"></i> BLOCKCHAIN LEDGER
+                    </h3>
+                    <span class="flex h-2 w-2 relative">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-ice-glow opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-ice-500"></span>
+                    </span>
+                </div>
+
+                <!-- Log List Window -->
+                <div id="ledgerLog" class="font-mono text-[10px] space-y-2 overflow-y-auto max-h-[280px] pr-1 text-ice-300/80">
+                    <div class="text-ice-500">[SYSTEM]: Cold Block Chain Genesis block initialized.</div>
+                    <div class="text-ice-500">[SYSTEM]: ZK-Proof Ice Matrix connected.</div>
+                </div>
+
+                <!-- Footer Status -->
+                <div class="pt-2 border-t border-ice-500/20 text-[10px] text-ice-300/50 flex justify-between">
+                    <span>STATUS: SYNCED</span>
+                    <span>ZK-PROOF: ACTIVE</span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- GLOBAL ICE AGE SHOCKER ALERT MODAL (Triggers on 100 Trillion Blocks) -->
+    <div id="iceAgeModal" class="fixed inset-0 z-50 bg-black/90 backdrop-blur-xl flex items-center justify-center p-4 hidden">
+        <div class="max-w-md w-full ice-panel p-6 rounded-2xl border-2 border-cyan-400 shadow-[0_0_50px_rgba(0,240,255,0.8)] text-center relative overflow-hidden">
+            <div class="absolute -top-12 -left-12 w-32 h-32 bg-cyan-400/20 rounded-full blur-2xl"></div>
+            
+            <i data-lucide="snowflake" class="w-16 h-16 text-cyan-300 mx-auto mb-4 animate-bounce"></i>
+            
+            <h2 class="font-orbitron font-black text-2xl text-white tracking-wider mb-2">THE ICE AGE AGAIN</h2>
+            <p class="text-xs text-cyan-200/80 mb-6 leading-relaxed">
+                100 TRILLION BLOCKS MINTED. The global cryo-ledger has reached total thermodynamic capacity. Absolute Zero (-273.15°C) achieved across all planetary quantum nodes.
+            </p>
+
+            <div class="bg-ice-dark/80 p-3 rounded-lg border border-cyan-500/30 text-left text-xs mb-6 space-y-1">
+                <div class="text-cyan-400">▶ FINAL BLOCK HEIGHT: <span class="text-white font-bold">100,000,000,000,000</span></div>
+                <div class="text-cyan-400">▶ CORE TEMPERATURE: <span class="text-white font-bold">-273.15 °C (ABSOLUTE ZERO)</span></div>
+                <div class="text-cyan-400">▶ GLOBAL SHOCKER STATUS: <span class="text-white font-bold">ICE AGE RE-INITIALIZED</span></div>
+            </div>
+
+            <button onclick="resetIceAge()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-orbitron font-bold text-sm rounded-xl shadow-ice-button transition-all">
+                RESTART CRYO ERA
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER LEDGER TICKER -->
+    <footer class="relative z-20 border-t border-ice-500/20 bg-ice-dark/90 px-4 py-2 text-[11px] text-ice-300/60">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div>CHIP CHAIN COLD BLOCK &copy; 2026 // HISTORICAL ADVANCED CRYPTOGRAPHIC LEDGER</div>
+            <div class="flex space-x-4 font-mono">
+                <span>NONCE: <span id="footerNonce" class="text-ice-glow">0x8a9f</span></span>
+                <span>ICE REWARD: <span class="text-emerald-400">10 COLD/BLOCK</span></span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT APP ENGINE -->
+    <script>
+        // --- GAME STATE DATA ---
+        const TARGET_BLOCKS = 100000000000000; // 100 Trillion
+        let blockCount = 0;
+        let iceBalance = 0;
+        let unclaimedIce = 0;
+        let globalTemp = -18.40; // Starts at -18.40°C
+        let isAudioMuted = false;
+
+        // Upgrade Configurations
+        const upgrades = [
+            { id: 'chipset', name: 'Cryo Chipset V1', cost: 15, power: 1, yield: 0.2, count: 0, icon: 'microchip' },
+            { id: 'cooler', name: 'Liquid N2 Cooler', cost: 100, power: 8, yield: 1.5, count: 0, icon: 'snowflake' },
+            { id: 'chiller', name: 'Quantum Chiller', cost: 1100, power: 50, yield: 12, count: 0, icon: 'zap' },
+            { id: 'node', name: 'Absolute Zero Node', cost: 12000, power: 400, yield: 95, count: 0, icon: 'server' }
+        ];
+
+        // Web Audio API Sound Synthesizer
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playIceChimeSound() {
+            if (isAudioMuted) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+            osc.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.15); // Slide to A6
+
+            gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.15);
+        }
+
+        function playFreezeSound() {
+            if (isAudioMuted) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const icon = document.getElementById('soundIcon');
+            if (isAudioMuted) {
+                icon.setAttribute('data-lucide', 'volume-x');
+            } else {
+                icon.setAttribute('data-lucide', 'volume-2');
+            }
+            lucide.createIcons();
+        }
+
+        // --- RENDER HARDWARE UPGRADE STORE ---
+        function renderUpgrades() {
+            const list = document.getElementById('hardwareList');
+            list.innerHTML = '';
+
+            upgrades.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = `p-3 rounded-lg border transition-all ${
+                    iceBalance >= item.cost 
+                        ? 'bg-ice-500/10 border-ice-500/40 hover:border-ice-glow cursor-pointer' 
+                        : 'bg-ice-dark/40 border-ice-500/10 opacity-60'
+                }`;
+                card.onclick = () => buyUpgrade(index);
+
+                card.innerHTML = `
+                    <div class="flex items-center justify-between mb-1">
+                        <div class="font-orbitron font-bold text-xs text-white flex items-center gap-1.5">
+                            <i data-lucide="${item.icon}" class="w-3.5 h-3.5 text-ice-glow"></i>
+                            ${item.name}
+                        </div>
+                        <span class="text-[10px] text-ice-glow bg-ice-500/20 px-1.5 rounded font-mono">x${item.count}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-[10px] text-ice-300/70">
+                        <span>+${item.power} Block/s | +${item.yield} ICE/s</span>
+                        <span class="font-orbitron text-emerald-400 font-bold">${Math.floor(item.cost)} $ICE</span>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        // --- MINTING LOGIC ---
+        function mintBlock(event) {
+            blockCount++;
+            unclaimedIce += 10; // Earn 10 ICE per manual mint
+
+            playIceChimeSound();
+            if (event) spawnFloatingText(event);
+
+            updateLedgerLog(`Minted Block #${blockCount.toLocaleString()} | ZK-Proof Hash: 0x${generateHash()}`);
+            updateGameUI();
+            checkIceAgeEpoch();
+        }
+
+        function triggerTurbo(amount) {
+            blockCount += amount;
+            unclaimedIce += (amount * 0.1); // Scaled rewards for turbo simulation
+
+            playFreezeSound();
+            updateLedgerLog(`[QUANTUM TURBO]: Rapid minting jump +${amount.toLocaleString()} blocks!`);
+            updateGameUI();
+            checkIceAgeEpoch();
+        }
+
+        function buyUpgrade(index) {
+            const item = upgrades[index];
+            if (iceBalance >= item.cost) {
+                iceBalance -= item.cost;
+                item.count++;
+                item.cost *= 1.35; // Cost scaling formula
+                playIceChimeSound();
+                renderUpgrades();
+                updateGameUI();
+                updateLedgerLog(`[HARDWARE]: Acquired ${item.name}. Total: ${item.count}`);
+            }
+        }
+
+        function claimRewards() {
+            if (unclaimedIce > 0) {
+                iceBalance += unclaimedIce;
+                updateLedgerLog(`[CLAIM]: Successfully transferred ${unclaimedIce.toFixed(2)} $ICE to Cold Storage.`);
+                unclaimedIce = 0;
+                playIceChimeSound();
+                renderUpgrades();
+                updateGameUI();
+            }
+        }
+
+        // --- UI & STATS UPDATE ---
+        function updateGameUI() {
+            // Block Counter Formatting
+            document.getElementById('blockCounter').innerText = blockCount.toLocaleString();
+
+            // Progress Calculation
+            const progress = Math.min((blockCount / TARGET_BLOCKS) * 100, 100);
+            document.getElementById('progressBar').style.width = `${progress}%`;
+            document.getElementById('progressPercent').innerText = `${progress.toFixed(6)}%`;
+
+            // Temperature Calculation: Drops as blocks scale to 100 Trillion (-273.15°C Absolute Zero)
+            const tempDrop = (blockCount / TARGET_BLOCKS) * 254.75;
+            globalTemp = -18.40 - tempDrop;
+            if (globalTemp < -273.15) globalTemp = -273.15;
+            document.getElementById('tempDisplay').innerText = `${globalTemp.toFixed(2)} °C`;
+
+            // Rewards
+            document.getElementById('rewardBalance').innerText = `${unclaimedIce.toFixed(2)} $ICE`;
+
+            // Hashrate and Passive Yield
+            const totalHash = upgrades.reduce((acc, curr) => acc + (curr.power * curr.count), 0);
+            const totalYield = upgrades.reduce((acc, curr) => acc + (curr.yield * curr.count), 0);
+
+            document.getElementById('hashRateDisplay').innerText = `${totalHash.toLocaleString()} H/s`;
+            document.getElementById('yieldDisplay').innerText = `${totalYield.toFixed(1)} ICE/s`;
+
+            // Footer Nonce update
+            document.getElementById('footerNonce').innerText = `0x${generateHash().substring(0, 4)}`;
+
+            // Dynamic Frost Visual Strength
+            const frostOpacity = progress / 100;
+            document.getElementById('frostOverlay').style.opacity = frostOpacity * 0.7;
+        }
+
+        // --- ICE AGE AGAIN TERMINAL EVENT ---
+        function checkIceAgeEpoch() {
+            if (blockCount >= TARGET_BLOCKS) {
+                document.getElementById('iceAgeModal').classList.remove('hidden');
+                document.getElementById('frostOverlay').style.opacity = '1';
+                playFreezeSound();
+                updateLedgerLog(`[CRITICAL]: ABSOLUTE ZERO REACHED. GLOBAL COLD SHOCKER TRIGGERED.`);
+            }
+        }
+
+        function resetIceAge() {
+            blockCount = 0;
+            unclaimedIce = 0;
+            globalTemp = -18.40;
+            document.getElementById('iceAgeModal').classList.add('hidden');
+            updateGameUI();
+            updateLedgerLog(`[SYSTEM]: Blockchain reset back to Genesis Block.`);
+        }
+
+        // --- HELPER FUNCTIONS ---
+        function generateHash() {
+            return Math.random().toString(16).substring(2, 10);
+        }
+
+        function updateLedgerLog(message) {
+            const log = document.getElementById('ledgerLog');
+            const entry = document.createElement('div');
+            entry.className = 'text-ice-300/90 border-l border-ice-500/40 pl-2 py-0.5';
+            entry.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+
+            // Keep log history reasonable
+            if (log.childNodes.length > 20) {
+                log.removeChild(log.firstChild);
+            }
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function spawnFloatingText(event) {
+            const btn = document.getElementById('mintBtn');
+            const rect = btn.getBoundingClientRect();
+            
+            const el = document.createElement('div');
+            el.className = 'float-text';
+            el.innerText = '+1 BLOCK';
+
+            // Calculate click coordinates relative to viewport
+            const x = event.clientX || (rect.left + rect.width / 2);
+            const y = event.clientY || (rect.top + rect.height / 2);
+
+            el.style.left = `${x - 30}px`;
+            el.style.top = `${y - 20}px`;
+
+            document.body.appendChild(el);
+
+            setTimeout(() => {
+                el.remove();
+            }, 1200);
+        }
+
+        // --- GAME LOOP (Auto Miners & Yield Generation) ---
+        setInterval(() => {
+            const autoBlocks = upgrades.reduce((acc, curr) => acc + (curr.power * curr.count), 0);
+            const autoYield = upgrades.reduce((acc, curr) => acc + (curr.yield * curr.count), 0);
+
+            if (autoBlocks > 0) {
+                blockCount += autoBlocks;
+                checkIceAgeEpoch();
+            }
+
+            if (autoYield > 0) {
+                unclaimedIce += autoYield;
+            }
+
+            if (autoBlocks > 0 || autoYield > 0) {
+                updateGameUI();
+                renderUpgrades();
+            }
+        }, 1000);
+
+        // --- CANVAS BACKGROUND ICE PARTICLES & GLACIAL NODES ---
+        const canvas = document.getElementById('iceCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.5;
+                this.speedY = Math.random() * 0.8 + 0.2;
+                this.opacity = Math.random() * 0.6 + 0.2;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.y > canvas.height) this.y = 0;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+            }
+
+            draw() {
+                ctx.fillStyle = `rgba(0, 240, 255, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // Initialize particles
+        for (let i = 0; i < 70; i++) {
+            particles.push(new Particle());
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw connecting lines between close particles (Glacial Quantum Mesh)
+            for (let a = 0; a < particles.length; a++) {
+                for (let b = a; b < particles.length; b++) {
+                    const dx = particles[a].x - particles[b].x;
+                    const dy = particles[a].y - particles[b].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist < 100) {
+                        ctx.strokeStyle = `rgba(0, 240, 255, ${1 - dist / 100 * 0.15})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(particles[a].x, particles[a].y);
+                        ctx.lineTo(particles[b].x, particles[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animateCanvas);
+        }
+
+        // --- INIT APP ON LOAD ---
+        window.onload = () => {
+            lucide.createIcons();
+            renderUpgrades();
+            updateGameUI();
+            animateCanvas();
+        };
+    </script>
+</body>
+</html>
